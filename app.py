@@ -55,27 +55,39 @@ with tab1:
     st.subheader("Google Sheets Live Registry Sync")
     sheet_url = st.text_input("Paste Shared Google Sheet URL:")
 
+    # Initialize persistent state variables if they don't exist yet
+    if "sheet_connected" not in st.session_state:
+        st.session_state.sheet_connected = False
+    if "records" not in st.session_state:
+        st.session_state.records = []
+
+    # If the user provides a URL, establish or refresh the connection
     if sheet_url:
         try:
             import re
-            # Safely extract the ID from the URL using regex
             match = re.search(r'/d/([a-zA-Z0-9-_]+)', sheet_url)
             if match:
                 sheet_id = match.group(1)
-                sheet = gc.open_by_key(sheet_id).get_worksheet(0)
-                records = sheet.get_all_records()
+                # Save the open sheet directly into session state so it persists
+                st.session_state.active_sheet = gc.open_by_key(sheet_id).get_worksheet(0)
+                st.session_state.records = st.session_state.active_sheet.get_all_records()
+                st.session_state.sheet_connected = True
             else:
                 st.error("Invalid URL layout. Could not parse Spreadsheet ID.")
-                records = []
+                st.session_state.sheet_connected = False
+                st.session_state.records = []
         except Exception as e:
             st.error(f"Gspread Connection Error: {e}")
-            records = []
+            st.session_state.sheet_connected = False
+            st.session_state.records = []
 
-        # Display current active database metrics grid
-        if records:
-            st.dataframe(records, use_container_width=True)
-        else:
-            st.info("Central database layer connected. The worksheet is currently empty.")
+    # Display current active database metrics grid from state storage
+    if st.session_state.sheet_connected and st.session_state.records:
+        st.dataframe(st.session_state.records, use_container_width=True)
+    elif sheet_url and st.session_state.sheet_connected:
+        st.info("Central database layer connected. The worksheet is currently empty.")
+
+    st.markdown("---")
 
     # Entry input form for real-time validation tracking
     with st.form("database_append_form"):
@@ -84,14 +96,26 @@ with tab1:
         metric_score = st.slider("Select Target Progress Score:", 0.0, 1.0, 0.85)
         submit = st.form_submit_button("Commit to Sheets DB")
 
-        if submit and metric_id:
-            try:
-                import datetime
-                ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                sheet.append_row([metric_id, metric_score, ts])
-                st.success(f"Successfully recorded metric {metric_id} into the live registry!")
-            except Exception as e:
-                st.error(f"Failed to append data to worksheet: {e}")
+        if submit:
+            # Check state memory instead of local variables
+            if not st.session_state.get("sheet_connected", False):
+                st.error("⚠️ Connection Missing: You must paste a valid Google Sheet URL into the input field above before committing data.")
+            elif not metric_id:
+                st.warning("Please provide a valid Competency Code / Metric ID before submitting.")
+            else:
+                try:
+                    import datetime
+                    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    
+                    # Append rows safely using the persistent session sheet variable
+                    st.session_state.active_sheet.append_row([metric_id, metric_score, ts])
+                    st.success(f"🚀 Successfully recorded metric {metric_id} into the live registry!")
+                    
+                    # Clear out cache to pull fresh records on reload
+                    st.session_state.records = st.session_state.active_sheet.get_all_records()
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Failed to append data to worksheet: {e}")
 
 # --- TAB 2: AUTOMATED DOCUMENT ASSEMBLY LINE ---
 with tab2:
