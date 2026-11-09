@@ -55,15 +55,15 @@ with tab1:
     st.subheader("Google Sheets Live Registry Sync")
     sheet_url = st.text_input("Paste Shared Google Sheet URL:")
     
-        if sheet_url:
-        try:
-            import re
+if sheet_url:
+    try:
+        import re
             # Safely extract the ID from the URL using regex
-            match = re.search(r'/d/([a-zA-Z0-9-_]+)', sheet_url)
-            if match:
-                sheet_id = match.group(1)
-                sheet = gc.open_by_key(sheet_id).get_worksheet(0)
-                records = sheet.get_all_records()
+        match = re.search(r'/d/([a-zA-Z0-9-_]+)', sheet_url)
+          if match:
+               sheet_id = match.group(1)
+               sheet = gc.open_by_key(sheet_id).get_worksheet(0)
+               records = sheet.get_all_records()
             else:
                 st.error("Invalid URL layout. Could not parse Spreadsheet ID.")
                 records = []
