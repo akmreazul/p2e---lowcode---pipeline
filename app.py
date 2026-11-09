@@ -76,19 +76,22 @@ with tab1:
             st.dataframe(records, use_container_width=True)
         else:
             st.info("Central database layer connected. The worksheet is currently empty.")
-            with st.form("database_append_form"):
-                st.write("Log Production Metric / Placement Telemetry Entry")
-                metric_id = st.text_input("Competency Code / Metric ID (e.g., NCTB-COMP-G5-CS):")
-                metric_score = st.slider("Select Target Progress Score:", 0.0, 1.0, 0.85)
-                submit = st.form_submit_button("Commit to Sheets DB")
-                
-                if submit and metric_id:
-                    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    sheet.append_row([metric_id, metric_score, ts])
-                    st.toast("Telemetry matrix cleanly committed to database!", icon="✅")
-                    st.rerun()
-        except Exception as e:
-            st.error(f"Sheets connectivity gap: {e}")
+
+    # Entry input form for real-time validation tracking
+    with st.form("database_append_form"):
+        st.write("Log Production Metric / Placement Telemetry Entry")
+        metric_id = st.text_input("Competency Code / Metric ID (e.g., NCTB-COMP-G5-C1):")
+        metric_score = st.slider("Select Target Progress Score:", 0.0, 1.0, 0.85)
+        submit = st.form_submit_button("Commit to Sheets DB")
+
+        if submit and metric_id:
+            try:
+                import datetime
+                ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                sheet.append_row([metric_id, metric_score, ts])
+                st.success(f"Successfully recorded metric {metric_id} into the live registry!")
+            except Exception as e:
+                st.error(f"Failed to append data to worksheet: {e}")
 
 # --- TAB 2: AUTOMATED DOCUMENT ASSEMBLY LINE ---
 with tab2:
