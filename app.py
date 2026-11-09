@@ -51,31 +51,31 @@ st.markdown("Operational control center managing data, reports, and simulated di
 tab1, tab2, tab3 = st.tabs(["📊 Sheets Database Sync", "📝 Automated Docs Engine", "🤖 AI Dialogue Sandbox (D18/20)"])
 
 # --- TAB 1: REAL-TIME SHEET MONITOR & INTAKE DB ---
-    with tab1:
-        st.subheader("Google Sheets Live Registry Sync")
-        sheet_url = st.text_input("Paste Shared Google Sheet URL:")
+with tab1:
+    st.subheader("Google Sheets Live Registry Sync")
+    sheet_url = st.text_input("Paste Shared Google Sheet URL:")
 
-        if sheet_url:
-            try:
-                import re
-                # Safely extract the ID from the URL using regex
-                match = re.search(r'/d/([a-zA-Z0-9-_]+)', sheet_url)
-                if match:
-                    sheet_id = match.group(1)
-                    sheet = gc.open_by_key(sheet_id).get_worksheet(0)
-                    records = sheet.get_all_records()
-                else:
-                    st.error("Invalid URL layout. Could not parse Spreadsheet ID.")
-                    records = []
-            except Exception as e:
-                st.error(f"Gspread Connection Error: {e}")
-                records = []
-
-            # Display current active database metrics grid
-            if records:
-                st.dataframe(records, use_container_width=True)
+    if sheet_url:
+        try:
+            import re
+            # Safely extract the ID from the URL using regex
+            match = re.search(r'/d/([a-zA-Z0-9-_]+)', sheet_url)
+            if match:
+                sheet_id = match.group(1)
+                sheet = gc.open_by_key(sheet_id).get_worksheet(0)
+                records = sheet.get_all_records()
             else:
-                st.info("Central database layer connected. The worksheet is currently empty.")
+                st.error("Invalid URL layout. Could not parse Spreadsheet ID.")
+                records = []
+        except Exception as e:
+            st.error(f"Gspread Connection Error: {e}")
+            records = []
+
+        # Display current active database metrics grid
+        if records:
+            st.dataframe(records, use_container_width=True)
+        else:
+            st.info("Central database layer connected. The worksheet is currently empty.")
             with st.form("database_append_form"):
                 st.write("Log Production Metric / Placement Telemetry Entry")
                 metric_id = st.text_input("Competency Code / Metric ID (e.g., NCTB-COMP-G5-CS):")
